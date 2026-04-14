@@ -2,14 +2,12 @@ import os
 from flask import Flask, render_template, request, jsonify
 import oracledb
 
-
-
 app = Flask(__name__)
 
-# Configurações de Ambiente
+
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_DSN = os.getenv('DB_DSN', 'localhost:1521/xe')
+DB_DSN = os.getenv('DB_DSN')
 
 @app.route('/')
 def index():
@@ -22,6 +20,7 @@ def varrer_bots():
 
     connection = None
     try:
+       
         connection = oracledb.connect(
             user=DB_USER,
             password=DB_PASSWORD,
@@ -29,9 +28,10 @@ def varrer_bots():
         )
         cursor = connection.cursor()
 
-        # Criamos uma variável no Python para receber o valor do PL/SQL
+        
         v_total_removido = cursor.var(int)
 
+       
         plsql_block = """
         DECLARE
             CURSOR c_bots IS
@@ -53,32 +53,38 @@ def varrer_bots():
                 FETCH c_bots INTO v_ins_id, v_usu_id, v_email;
                 EXIT WHEN c_bots%NOTFOUND;
 
-                UPDATE USUARIOS SET SALDO = SALDO - 15 WHERE ID = v_usu_id;
-                UPDATE INSCRICOES SET STATUS = 'CANCELLED' WHERE ID = v_ins_id;
+                -- REGRA: Reduzir TRUST_SCORE em 15 pontos (coluna SALDO)
+                UPDATE USUARIOS 
+                SET SALDO = SALDO - 15 
+                WHERE ID = v_usu_id;
 
+                -- REGRA: Cancelar inscrição fraudulenta
+                UPDATE INSCRICOES 
+                SET STATUS = 'CANCELLED' 
+                WHERE ID = v_ins_id;
+
+                -- REGRA: Registrar motivo detalhado no LOG_AUDITORIA
                 INSERT INTO LOG_AUDITORIA (INSCRICAO_ID, MOTIVO, DATA)
-                VALUES (v_ins_id, 'BOT NEUTRALIZADO: ' || v_email, SYSDATE);
+                VALUES (v_ins_id, 'FRAUDE: E-mail suspeito detectado (' || v_email || ')', SYSDATE);
                 
                 v_cont := v_cont + 1;
             END LOOP;
             CLOSE c_bots;
             
-            COMMIT;
+            COMMIT; -- Salva todas as alterações
             
-            -- ATRIBUIÇÃO: Passa o valor do contador local para a bind variable do Python
+            -- Retorna o total para o Python
             :out_contagem := v_cont;
         END;
         """
         
-        # Executamos passando o parâmetro de saída
         cursor.execute(plsql_block, out_contagem=v_total_removido)
         
-        # Pegamos o valor final da variável
         total = v_total_removido.getvalue()
         
         return jsonify({
             "status": "success",
-            "message": f"Varredura concluída! {total} bot(s) detectado(s) e neutralizado(s) no sistema.",
+            "message": f"Segurança reforçada! {total} ameaça(s) neutralizada(s).",
             "total": total
         })
 
@@ -86,12 +92,13 @@ def varrer_bots():
         error, = e.args
         return jsonify({
             "status": "error",
-            "message": f"Erro Oracle: {error.message}"
+            "message": f"Erro de Conexão/SQL: {error.message}"
         }), 500
     
     finally:
         if connection:
             connection.close()
 
+# Para o deploy na Vercel, o app precisa estar exposto
 if __name__ == '__main__':
     app.run(debug=True)

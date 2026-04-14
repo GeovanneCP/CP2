@@ -6,42 +6,43 @@
     <style>
         /* CSS para o visual Cyberpunk */
         body { background: #0a0b10; color: #00f2ff; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { border: 2px solid #00f2ff; padding: 30px; background: rgba(16, 18, 27, 0.9); width: 450px; text-align: center; position: relative; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
+        .container { border: 2px solid #00f2ff; padding: 30px; background: rgba(16, 18, 27, 0.9); width: 480px; text-align: center; position: relative; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
         h2 { text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
-        input { width: 80%; padding: 10px; margin: 20px 0; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; text-align: center; outline: none; }
-        button { width: 100%; padding: 15px; background: #00f2ff; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        input { width: 80%; padding: 12px; margin: 20px 0; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; text-align: center; outline: none; font-size: 1rem; }
+        button { width: 100%; padding: 15px; background: #00f2ff; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; font-size: 1rem; }
         button:hover { background: #008c95; box-shadow: 0 0 20px #00f2ff; }
         
-        .scanner { display: none; height: 3px; background: #00f2ff; box-shadow: 0 0 10px #00f2ff; position: absolute; left: 0; width: 100%; animation: scan 2s infinite linear; z-index: 10; }
+        .scanner { display: none; height: 4px; background: #00f2ff; box-shadow: 0 0 15px #00f2ff; position: absolute; left: 0; width: 100%; animation: scan 2s infinite linear; z-index: 10; }
         @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
         
-        /* Área de Log Melhorada */
         #log { 
             margin-top: 20px; 
             font-size: 0.85rem; 
             color: #00ff41; 
             text-align: left; 
-            height: 120px; 
+            height: 150px; 
             overflow-y: auto; 
             border-top: 1px solid #333; 
             padding-top: 10px;
             scrollbar-width: thin;
             scrollbar-color: #00f2ff #0a0b10;
+            background: rgba(0, 0, 0, 0.3);
         }
-        .log-entry { margin-bottom: 5px; }
+        .log-entry { margin-bottom: 4px; line-height: 1.2; }
         .success-text { color: #00f2ff; font-weight: bold; }
+        .alert-text { color: #ff0055; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="scanner" class="scanner"></div>
         <h2>Global Cyber Summit</h2>
-        <p style="opacity: 0.7; font-size: 0.9rem;">SOC Anti-Bot System v2.6</p>
+        <p style="opacity: 0.7; font-size: 0.9rem;">SOC Heuristic Analysis v2.6</p>
         
         <input type="number" id="event_id" placeholder="ID DO EVENTO ALVO">
-        <button id="btn_scan" onclick="iniciarVarredura()">Iniciar Varredura Anti-Bot</button>
+        <button id="btn_scan" onclick="iniciarVarredura()">Executar Protocolo Anti-Bot</button>
         
-        <div id="log">> Terminal pronto. Aguardando ID do evento...</div>
+        <div id="log">> Terminal inicializado. Aguardando diretrizes...</div>
     </div>
 
     <script>
@@ -50,7 +51,7 @@
             const data = new Date().toLocaleTimeString();
             const novaEntrada = `<div class="log-entry ${classe}">[${data}] ${texto}</div>`;
             log.innerHTML += novaEntrada;
-            log.scrollTop = log.scrollHeight; // Scroll automático para o final
+            log.scrollTop = log.scrollHeight;
         }
 
         async function iniciarVarredura() {
@@ -59,20 +60,21 @@
             const scanner = document.getElementById('scanner');
             const btn = document.getElementById('btn_scan');
 
-            if(!eventId) return alert("Por favor, insira o ID do Evento!");
+            if(!eventId) return alert("Por favor, forneça o ID do Evento!");
 
-            // Interface em modo de processamento
             scanner.style.display = 'block';
             btn.disabled = true;
             btn.style.opacity = '0.5';
-            log.innerHTML = ""; // Limpa logs anteriores
+            log.innerHTML = ""; 
             
-            adicionarLog(`Iniciando conexão com Banco de Dados Oracle...`);
+            adicionarLog(`[INFO] Estabelecendo conexão segura com Oracle DB...`);
+            await new Promise(r => setTimeout(r, 600));
             
-            // Simula passos visuais antes da resposta do servidor
-            await new Promise(r => setTimeout(r, 800));
-            adicionarLog(`Executando Bloco Anônimo PL/SQL (Cursor Explícito)...`);
+            adicionarLog(`[INFO] Varrendo inscrições PENDING no evento ${eventId}...`);
+            await new Promise(r => setTimeout(r, 600));
             
+            adicionarLog(`[EXEC] Invocando Bloco PL/SQL com Cursor Explícito...`);
+
             try {
                 const response = await fetch('/varrer', {
                     method: 'POST',
@@ -82,23 +84,29 @@
 
                 const data = await response.json();
                 
-                await new Promise(r => setTimeout(r, 600));
-                
                 if (data.status === "success") {
-                    adicionarLog(`Lógica de negócio processada com sucesso.`);
-                    adicionarLog(`Inscrições PENDING analisadas no evento ${eventId}.`);
-                    adicionarLog(`RESULTADO: ${data.message}`, "success-text");
+                    // Aqui mostramos as regras sendo aplicadas conforme a resposta do banco
+                    adicionarLog(`[DETECT] ${data.total} bots identificados por e-mail suspeito/malformado.`, "alert-text");
+                    
+                    await new Promise(r => setTimeout(r, 500));
+                    adicionarLog(`[REGRA] Reduzindo TRUST_SCORE dos infratores em 15 pontos...`);
+                    
+                    await new Promise(r => setTimeout(r, 500));
+                    adicionarLog(`[LOG] Registrando evidências na tabela LOG_AUDITORIA...`);
+                    
+                    await new Promise(r => setTimeout(r, 500));
+                    adicionarLog(`[FINAL] STATUS: ${data.message}`, "success-text");
                 } else {
-                    adicionarLog(`ERRO: ${data.message}`, "log-entry");
+                    adicionarLog(`[FALHA] Erro retornado pelo Oracle: ${data.message}`, "alert-text");
                 }
 
             } catch (err) {
-                adicionarLog(`FALHA CRÍTICA: Não foi possível conectar ao servidor Flask.`, "log-entry");
+                adicionarLog(`[FATAL] Erro de comunicação com o servidor Flask.`, "alert-text");
             } finally {
                 scanner.style.display = 'none';
                 btn.disabled = false;
                 btn.style.opacity = '1';
-                adicionarLog(`> Protocolo encerrado.`);
+                adicionarLog(`> Protocolo de segurança finalizado.`);
             }
         }
     </script>
