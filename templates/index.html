@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>SOC - Global Cyber Summit</title>
+    <style>
+        /* CSS para o visual Cyberpunk */
+        body { background: #0a0b10; color: #00f2ff; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { border: 2px solid #00f2ff; padding: 30px; background: rgba(16, 18, 27, 0.9); width: 400px; text-align: center; position: relative; }
+        input { width: 80%; padding: 10px; margin: 20px 0; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; text-align: center; }
+        button { width: 100%; padding: 15px; background: #00f2ff; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .scanner { display: none; height: 3px; background: #00f2ff; box-shadow: 0 0 10px #00f2ff; position: absolute; left: 0; width: 100%; animation: scan 2s infinite linear; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        #log { margin-top: 20px; font-size: 0.8rem; color: #00ff41; text-align: left; min-height: 50px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="scanner" class="scanner"></div>
+        <h2>Global Cyber Summit</h2>
+        <p>SOC Anti-Bot System v2.6</p>
+        
+        <input type="number" id="event_id" placeholder="ID DO EVENTO">
+        <button onclick="iniciarVarredura()">Iniciar Varredura</button>
+        
+        <div id="log">> Aguardando comando...</div>
+    </div>
+
+    <script>
+        async function iniciarVarredura() {
+            const eventId = document.getElementById('event_id').value;
+            const log = document.getElementById('log');
+            const scanner = document.getElementById('scanner');
+
+            if(!eventId) return alert("Insira o ID do Evento!");
+
+            scanner.style.display = 'block';
+            log.innerHTML = "> Iniciando protocolos...";
+
+            try {
+                const response = await fetch('/varrer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id_evento: eventId })
+                });
+
+                const data = await response.json();
+                log.innerHTML = `> ${data.message}`;
+            } catch (err) {
+                log.innerHTML = "> ERRO: Verifique se o app.py está rodando!";
+            } finally {
+                scanner.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
