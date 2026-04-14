@@ -5,38 +5,74 @@
     <title>SOC - Global Cyber Summit</title>
     <style>
         /* CSS para o visual Cyberpunk */
-        body { background: #0a0b10; color: #00f2ff; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { border: 2px solid #00f2ff; padding: 30px; background: rgba(16, 18, 27, 0.9); width: 400px; text-align: center; position: relative; }
-        input { width: 80%; padding: 10px; margin: 20px 0; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; text-align: center; }
-        button { width: 100%; padding: 15px; background: #00f2ff; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        .scanner { display: none; height: 3px; background: #00f2ff; box-shadow: 0 0 10px #00f2ff; position: absolute; left: 0; width: 100%; animation: scan 2s infinite linear; }
+        body { background: #0a0b10; color: #00f2ff; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { border: 2px solid #00f2ff; padding: 30px; background: rgba(16, 18, 27, 0.9); width: 450px; text-align: center; position: relative; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
+        h2 { text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        input { width: 80%; padding: 10px; margin: 20px 0; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; text-align: center; outline: none; }
+        button { width: 100%; padding: 15px; background: #00f2ff; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        button:hover { background: #008c95; box-shadow: 0 0 20px #00f2ff; }
+        
+        .scanner { display: none; height: 3px; background: #00f2ff; box-shadow: 0 0 10px #00f2ff; position: absolute; left: 0; width: 100%; animation: scan 2s infinite linear; z-index: 10; }
         @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-        #log { margin-top: 20px; font-size: 0.8rem; color: #00ff41; text-align: left; min-height: 50px; }
+        
+        /* Área de Log Melhorada */
+        #log { 
+            margin-top: 20px; 
+            font-size: 0.85rem; 
+            color: #00ff41; 
+            text-align: left; 
+            height: 120px; 
+            overflow-y: auto; 
+            border-top: 1px solid #333; 
+            padding-top: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: #00f2ff #0a0b10;
+        }
+        .log-entry { margin-bottom: 5px; }
+        .success-text { color: #00f2ff; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="scanner" class="scanner"></div>
         <h2>Global Cyber Summit</h2>
-        <p>SOC Anti-Bot System v2.6</p>
+        <p style="opacity: 0.7; font-size: 0.9rem;">SOC Anti-Bot System v2.6</p>
         
-        <input type="number" id="event_id" placeholder="ID DO EVENTO">
-        <button onclick="iniciarVarredura()">Iniciar Varredura</button>
+        <input type="number" id="event_id" placeholder="ID DO EVENTO ALVO">
+        <button id="btn_scan" onclick="iniciarVarredura()">Iniciar Varredura Anti-Bot</button>
         
-        <div id="log">> Aguardando comando...</div>
+        <div id="log">> Terminal pronto. Aguardando ID do evento...</div>
     </div>
 
     <script>
+        function adicionarLog(texto, classe = "") {
+            const log = document.getElementById('log');
+            const data = new Date().toLocaleTimeString();
+            const novaEntrada = `<div class="log-entry ${classe}">[${data}] ${texto}</div>`;
+            log.innerHTML += novaEntrada;
+            log.scrollTop = log.scrollHeight; // Scroll automático para o final
+        }
+
         async function iniciarVarredura() {
             const eventId = document.getElementById('event_id').value;
             const log = document.getElementById('log');
             const scanner = document.getElementById('scanner');
+            const btn = document.getElementById('btn_scan');
 
-            if(!eventId) return alert("Insira o ID do Evento!");
+            if(!eventId) return alert("Por favor, insira o ID do Evento!");
 
+            // Interface em modo de processamento
             scanner.style.display = 'block';
-            log.innerHTML = "> Iniciando protocolos...";
-
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            log.innerHTML = ""; // Limpa logs anteriores
+            
+            adicionarLog(`Iniciando conexão com Banco de Dados Oracle...`);
+            
+            // Simula passos visuais antes da resposta do servidor
+            await new Promise(r => setTimeout(r, 800));
+            adicionarLog(`Executando Bloco Anônimo PL/SQL (Cursor Explícito)...`);
+            
             try {
                 const response = await fetch('/varrer', {
                     method: 'POST',
@@ -45,11 +81,24 @@
                 });
 
                 const data = await response.json();
-                log.innerHTML = `> ${data.message}`;
+                
+                await new Promise(r => setTimeout(r, 600));
+                
+                if (data.status === "success") {
+                    adicionarLog(`Lógica de negócio processada com sucesso.`);
+                    adicionarLog(`Inscrições PENDING analisadas no evento ${eventId}.`);
+                    adicionarLog(`RESULTADO: ${data.message}`, "success-text");
+                } else {
+                    adicionarLog(`ERRO: ${data.message}`, "log-entry");
+                }
+
             } catch (err) {
-                log.innerHTML = "> ERRO: Verifique se o app.py está rodando!";
+                adicionarLog(`FALHA CRÍTICA: Não foi possível conectar ao servidor Flask.`, "log-entry");
             } finally {
                 scanner.style.display = 'none';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                adicionarLog(`> Protocolo encerrado.`);
             }
         }
     </script>

@@ -2,10 +2,12 @@ import os
 from flask import Flask, render_template, request, jsonify
 import oracledb
 
+
+
 app = Flask(__name__)
 
-
-DB_USER = os.getenv('DB_USER', 'seu_usuario_padrao')
+# Configurações de Ambiente
+DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_DSN = os.getenv('DB_DSN', 'localhost:1521/xe')
 
@@ -20,13 +22,15 @@ def varrer_bots():
 
     connection = None
     try:
-        # Conexão usando as variáveis de ambiente
         connection = oracledb.connect(
             user=DB_USER,
             password=DB_PASSWORD,
             dsn=DB_DSN
         )
         cursor = connection.cursor()
+
+        # Criamos uma variável no Python para receber o valor do PL/SQL
+        v_total_removido = cursor.var(int)
 
         plsql_block = """
         DECLARE
@@ -60,14 +64,22 @@ def varrer_bots():
             CLOSE c_bots;
             
             COMMIT;
+            
+            -- ATRIBUIÇÃO: Passa o valor do contador local para a bind variable do Python
+            :out_contagem := v_cont;
         END;
         """
         
-        cursor.execute(plsql_block)
+        # Executamos passando o parâmetro de saída
+        cursor.execute(plsql_block, out_contagem=v_total_removido)
+        
+        # Pegamos o valor final da variável
+        total = v_total_removido.getvalue()
         
         return jsonify({
             "status": "success",
-            "message": f"Varredura concluída no evento {id_evento}!"
+            "message": f"Varredura concluída! {total} bot(s) detectado(s) e neutralizado(s) no sistema.",
+            "total": total
         })
 
     except oracledb.DatabaseError as e:
